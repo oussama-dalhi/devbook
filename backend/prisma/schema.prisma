@@ -5,26 +5,40 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  posts     Post[]
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(30)
+  email        String   @unique @db.VarChar(254)
+  passwordHash String
+  role         Role     @default(USER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  posts Post[]
 }
 
 model Post {
   id        Int      @id @default(autoincrement())
-  content   String?
-  imageUrl  String?
+  content   String?  @db.VarChar(500)
+  imageUrl  String?  @db.VarChar(2048)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId  Int
+
+  @@index([authorId, createdAt])
+  @@index([createdAt])
 }
