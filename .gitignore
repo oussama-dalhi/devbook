@@ -8,11 +8,13 @@ node_modules/
 !.env.example
 
 # Generated Prisma client
-/backend/generated/prisma/
+/backend/src/generated/prisma/
 
 # Build output
 dist/
 build/
+/backend/dist/
+/frontend/dist/
 
 # Logs
 npm-debug.log*
