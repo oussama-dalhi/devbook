@@ -1,13 +1,17 @@
 import express, {
-  json,
-  type Express,
   type Request,
   type Response,
 } from "express";
+import { authRouter } from "./routes/auth.js";
 
 export const app = express();
 
-app.get("/", (req: Request, res: Response) => {
+app.disable('x-powered-by');
+// Parse JSON
+app.use(express.json({ limit: '10kb' })); 
+
+
+app.get("/", (_req: Request, res: Response) => {
   res.send("Hello World");
 });
 
@@ -17,3 +21,5 @@ app.get("/health", (req: Request, res: Response) => {
     message: "Backend is running",
   });
 });
+
+app.use("/api/auth", authRouter);
