@@ -15,7 +15,7 @@ app.get("/", (_req: Request, res: Response) => {
   res.send("Hello World");
 });
 
-app.get("/health", (req: Request, res: Response) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     message: "Backend is running",
