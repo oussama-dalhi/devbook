@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as z from 'zod';
 import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { hashPassword } from '../utils/password.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
 
 export const authRouter = Router();
 
@@ -55,4 +55,50 @@ authRouter.post('/register', async (req, res) => {
 
 authRouter.get('/', (_req, res) => {
   res.json({ message: 'Auth routes are working' });
+});
+
+const loginSchema = z.object({
+  identifier: z.string().trim().toLowerCase().min(3).max(254),
+  password: z.string().min(8).max(100),
+});
+
+authRouter.post('/login', async (req, res) => {
+  const result = loginSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      errors: result.error.issues,
+    });
+  }
+  const { identifier, password } = result.data;
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [{ username: identifier }, { email: identifier }],
+    },
+    select: {
+      id: true,
+      username: true,
+      name: true,
+      email: true,
+      passwordHash: true,
+    },
+  });
+  if (!user) {
+    return res.status(401).json({
+      error: 'Invalid credentials',
+    });
+  }
+  const verified = await verifyPassword(password, user.passwordHash);
+  if (!verified) {
+    return res.status(401).json({
+      error: 'Invalid credentials',
+    });
+  }
+  return res.status(200).json({
+    user: {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    }
+  })
 });
