@@ -7,9 +7,9 @@ import { hashPassword } from '../utils/password.js';
 export const authRouter = Router();
 
 const registerSchema = z.object({
-  username: z.string().trim().min(3).max(30),
+  username: z.string().trim().toLowerCase().min(3).max(30),
   name: z.string().trim().min(1).max(100),
-  email: z.string().trim().max(254).pipe(z.email()),
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
   password: z.string().min(8).max(100),
 });
 
