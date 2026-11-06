@@ -4,7 +4,7 @@ import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { createAccessToken } from '../utils/jwt.js';
-
+import { requireAuth } from '../middleware/auth.js';
 
 export const authRouter = Router();
 
@@ -110,6 +110,25 @@ authRouter.post('/login', async (req, res) => {
       username: user.username,
       name: user.name,
       email: user.email,
-    }
-  })
+    },
+  });
+});
+
+authRouter.post('/logout', (_req, res) => {
+  res.clearCookie('access_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+
+  return res.status(200).json({
+    message: 'Logged out successfully',
+  });
+});
+
+authRouter.get('/me', requireAuth, (req, res) => {
+  return res.status(200).json({
+    user: req.user,
+  });
 });
