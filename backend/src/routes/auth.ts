@@ -3,6 +3,8 @@ import * as z from 'zod';
 import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
+import { createAccessToken } from '../utils/jwt.js';
+
 
 export const authRouter = Router();
 
@@ -93,6 +95,15 @@ authRouter.post('/login', async (req, res) => {
       error: 'Invalid credentials',
     });
   }
+  const jwtToken = await createAccessToken(user.id);
+  res.cookie('access_token', jwtToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    path: '/',
+  });
+
   return res.status(200).json({
     user: {
       id: user.id,
