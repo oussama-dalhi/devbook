@@ -2,14 +2,16 @@ import { Router } from 'express';
 import * as z from 'zod';
 import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { hashPassword, verifyPassword } from '../utils/password.js';
+import { DUMMY_HASH, hashPassword, verifyPassword } from '../utils/password.js';
 import { createAccessToken } from '../utils/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
 
 export const authRouter = Router();
 
 const registerSchema = z.object({
-  username: z.string().trim().toLowerCase().min(3).max(30),
+  username: z.string().trim().toLowerCase().min(3).max(30).regex(/^[a-z0-9_-]+$/, {
+    message: 'Username can only contain lowercase letters, numbers, and underscores',
+  }),
   name: z.string().trim().min(1).max(100),
   email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
   password: z.string().min(8).max(100),
@@ -89,8 +91,9 @@ authRouter.post('/login', async (req, res) => {
       error: 'Invalid credentials',
     });
   }
-  const verified = await verifyPassword(password, user.passwordHash);
-  if (!verified) {
+  const verified = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+
+  if (!user || !verified) {
     return res.status(401).json({
       error: 'Invalid credentials',
     });
