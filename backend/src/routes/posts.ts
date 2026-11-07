@@ -6,8 +6,7 @@ import * as z from 'zod';
 
 const postsRouter = Router();
 
-// POST endpoints
-const createPostSchema = z
+const postBody = z
   .object({
     title: z.string().trim().min(1).max(100).optional(),
     content: z.string().trim().min(1).max(500).optional(),
@@ -16,10 +15,28 @@ const createPostSchema = z
       .max(2048)
       .optional(),
   })
-  .strict()
-  .refine((data) => data.content || data.imageUrl, {
-    message: 'A post must contain text or an image',
-  });
+  .strict();
+
+const createPostSchema = postBody.refine((d) => d.content || d.imageUrl, {
+  message: 'A post must contain text or an image',
+});
+
+const updatePostSchema = postBody.refine(
+  (d) => Object.values(d).some((v) => v !== undefined),
+  { message: 'At least one field must be provided' },
+);
+
+const postSelect = {
+  id: true,
+  title: true,
+  content: true,
+  imageUrl: true,
+  createdAt: true,
+  updatedAt: true,
+  author: { select: { id: true, username: true, name: true } },
+} satisfies Prisma.PostSelect;
+
+// POST endpoints
 
 postsRouter.post('/', requireAuth, async (req, res) => {
   const result = createPostSchema.safeParse(req.body);
@@ -36,6 +53,7 @@ postsRouter.post('/', requireAuth, async (req, res) => {
       ...(content !== undefined && { content }),
       ...(imageUrl !== undefined && { imageUrl }),
     },
+    select: postSelect,
   });
 
   return res.status(201).json({
@@ -43,20 +61,8 @@ postsRouter.post('/', requireAuth, async (req, res) => {
   });
 });
 
-const updateSchema = z
-  .object({
-    title: z.string().trim().min(1).max(100).optional(),
-    content: z.string().trim().min(1).max(500).optional(),
-    imageUrl: z
-      .url({ protocol: /^https?$/ })
-      .max(2048)
-      .optional(),
-  })
-  .strict()
-  .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: 'At least one field must be provided',
-  });
-const postIdSchema = z.coerce.number().int().positive();
+
+const postIdSchema = z.coerce.number().int().positive().max(2_147_483_647);
 postsRouter.patch('/:postId', requireAuth, async (req, res) => {
   const result = postIdSchema.safeParse(req.params.postId);
   if (!result.success) {
@@ -65,10 +71,10 @@ postsRouter.patch('/:postId', requireAuth, async (req, res) => {
     });
   }
   const postId = result.data;
-  const updateResult = updateSchema.safeParse(req.body);
+  const updateResult = updatePostSchema.safeParse(req.body);
   if (!updateResult.success) {
     return res.status(400).json({
-      error: updateResult.error.issues,
+      errors: updateResult.error.issues,
     });
   }
   const { title, content, imageUrl } = updateResult.data;
@@ -83,6 +89,7 @@ postsRouter.patch('/:postId', requireAuth, async (req, res) => {
         ...(content !== undefined && { content }),
         ...(imageUrl !== undefined && { imageUrl }),
       },
+      select: postSelect,
     });
     return res.status(200).json({ post });
   } catch (error) {
@@ -132,7 +139,7 @@ postsRouter.delete('/:postId', requireAuth, async (req, res) => {
 // GET endpoints
 
 const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
@@ -151,21 +158,7 @@ postsRouter.get('/', async (req, res) => {
       skip,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        imageUrl: true,
-        createdAt: true,
-        updatedAt: true,
-        author: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-          },
-        },
-      },
+      select: postSelect,
     }),
     prisma.post.count(),
   ]);
@@ -196,21 +189,7 @@ postsRouter.get('/:postId', async (req, res) => {
     where: {
       id: result.data,
     },
-    select: {
-      id: true,
-      title: true,
-      content: true,
-      imageUrl: true,
-      createdAt: true,
-      updatedAt: true,
-      author: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-        },
-      },
-    },
+    select: postSelect,
   });
   if (!post) {
     return res.status(404).json({
