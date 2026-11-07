@@ -1,3 +1,5 @@
+import { type Role } from "../generated/prisma/enums.ts";
+
 export {};
 
 declare global {
@@ -8,7 +10,7 @@ declare global {
         username: string;
         name: string;
         email: string;
-        role: 'USER' | 'ADMIN';
+        role: Role;
       };
     }
   }

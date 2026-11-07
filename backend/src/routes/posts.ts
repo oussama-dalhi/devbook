@@ -4,7 +4,7 @@ import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import * as z from 'zod';
 
-const postsRouter = Router();
+export const postsRouter = Router();
 
 const postBody = z
   .object({
@@ -198,4 +198,4 @@ postsRouter.get('/:postId', async (req, res) => {
   }
   return res.status(200).json({ post });
 });
-export default postsRouter;
+
