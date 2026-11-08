@@ -1,29 +1,19 @@
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { Route, Routes } from 'react-router';
+import { Layout } from '@/components/Layout';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RegisterPage } from '@/features/auth/RegisterPage';
+import { FeedPage } from '@/features/posts/FeedPage';
 
-function App() {
-  const [count, setCount] = useState(0);
-  const handleCount = () => {
-    setCount((prev) => prev + 1);
-  };
-  const handleReset = () => {
-    setCount(0);
-  };
-
+const App = () => {
   return (
-    <div>
-      <Button className="py-10 w-130" onClick={handleCount}>
-        {count}
-      </Button>
-      <Button
-        onClick={handleReset}
-        className="mx-3 w-30 py-5 px-3"
-        variant="destructive"
-      >
-        Reset
-      </Button>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<FeedPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+      </Route>
+    </Routes>
   );
-}
+};
 
 export default App;

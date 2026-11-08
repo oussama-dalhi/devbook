@@ -3,23 +3,19 @@ import { requireAuth } from '../middleware/auth.js';
 import { prisma } from '../db/prisma.js';
 import { Prisma } from '../generated/prisma/client.js';
 import * as z from 'zod';
+import { upload } from '../middleware/upload.js';
+import { uploadImage, deleteImage } from '../utils/image.js';
 
 export const postsRouter = Router();
 
 const postBody = z
   .object({
     title: z.string().trim().min(1).max(100).optional(),
-    content: z.string().trim().min(1).max(500).optional(),
-    imageUrl: z
-      .url({ protocol: /^https?$/ })
-      .max(2048)
-      .optional(),
+    content: z.string().trim().min(1).max(5000).optional(),
   })
   .strict();
 
-const createPostSchema = postBody.refine((d) => d.content || d.imageUrl, {
-  message: 'A post must contain text or an image',
-});
+const createPostSchema = postBody;
 
 const updatePostSchema = postBody.refine(
   (d) => Object.values(d).some((v) => v !== undefined),
@@ -38,29 +34,50 @@ const postSelect = {
 
 // POST endpoints
 
-postsRouter.post('/', requireAuth, async (req, res) => {
+postsRouter.post('/', requireAuth, upload.single('image'), async (req, res) => {
   const result = createPostSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
       errors: result.error.issues,
     });
   }
-  const { title, content, imageUrl } = result.data;
-  const post = await prisma.post.create({
-    data: {
-      authorId: req.user!.id,
-      ...(title !== undefined && { title }),
-      ...(content !== undefined && { content }),
-      ...(imageUrl !== undefined && { imageUrl }),
-    },
-    select: postSelect,
-  });
+  const { title, content } = result.data;
+  if (!content && !req.file) {
+    return res.status(400).json({
+      error: 'A post must contain text or an image',
+    });
+  }
+  const uploadedImage = req.file ? await uploadImage(req.file) : undefined;
+  let post;
+  try {
+    post = await prisma.post.create({
+      data: {
+        authorId: req.user!.id,
+        ...(title !== undefined && { title }),
+        ...(content !== undefined && { content }),
+        ...(uploadedImage && {
+          imageUrl: uploadedImage.url,
+          imageFileId: uploadedImage.fileId,
+        }),
+      },
+      select: postSelect,
+    });
+  } catch (error) {
+    // Avoid leaving an uploaded image if database creation fails
+    if (uploadedImage) {
+      try {
+        await deleteImage(uploadedImage.fileId);
+      } catch (cleanupError) {
+        console.error('Failed to clean up uploaded image:', cleanupError);
+      }
+    }
 
+    throw error;
+  }
   return res.status(201).json({
     post,
   });
 });
-
 
 const postIdSchema = z.coerce.number().int().positive().max(2_147_483_647);
 postsRouter.patch('/:postId', requireAuth, async (req, res) => {
@@ -77,7 +94,7 @@ postsRouter.patch('/:postId', requireAuth, async (req, res) => {
       errors: updateResult.error.issues,
     });
   }
-  const { title, content, imageUrl } = updateResult.data;
+  const { title, content } = updateResult.data;
   try {
     const post = await prisma.post.update({
       where: {
@@ -87,7 +104,6 @@ postsRouter.patch('/:postId', requireAuth, async (req, res) => {
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
-        ...(imageUrl !== undefined && { imageUrl }),
       },
       select: postSelect,
     });
@@ -108,19 +124,49 @@ postsRouter.patch('/:postId', requireAuth, async (req, res) => {
 
 postsRouter.delete('/:postId', requireAuth, async (req, res) => {
   const result = postIdSchema.safeParse(req.params.postId);
+
   if (!result.success) {
     return res.status(400).json({
       error: 'Invalid post ID',
     });
   }
+
   const postId = result.data;
+
   try {
+    const post = await prisma.post.findUnique({
+      where: {
+        id: postId,
+        authorId: req.user!.id,
+      },
+      select: {
+        imageFileId: true,
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({
+        error: 'Post not found',
+      });
+    }
+
+    // Delete the database record
     await prisma.post.delete({
       where: {
         id: postId,
         authorId: req.user!.id,
       },
     });
+
+    // delete ImageKit v image, if one exists.
+    if (post.imageFileId) {
+      try {
+        await deleteImage(post.imageFileId);
+      } catch (error) {
+        console.error('Failed to delete ImageKit image:', error);
+      }
+    }
+
     return res.status(204).send();
   } catch (error) {
     if (
@@ -198,4 +244,3 @@ postsRouter.get('/:postId', async (req, res) => {
   }
   return res.status(200).json({ post });
 });
-
