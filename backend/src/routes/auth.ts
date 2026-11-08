@@ -86,11 +86,6 @@ authRouter.post('/login', async (req, res) => {
       passwordHash: true,
     },
   });
-  if (!user) {
-    return res.status(401).json({
-      error: 'Invalid credentials',
-    });
-  }
   const verified = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !verified) {
