@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMe } from '@/features/auth/useMe';
 import { DeletePostButton } from './DeletePostButton';
 import { EditPostForm } from './EditPostForm';
 import type { Post } from './types';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatRelativeTime } from '@/lib/format';
 
 type PostCardProps = {
   post: Post;
+  currentUserId?: number;
 };
 
-export const PostCard = ({ post }: PostCardProps) => {
-  const { data: user } = useMe();
+export const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const isOwner = user?.id === post.author.id;
+  const isOwner = currentUserId === post.author.id;
+  const [deleteError, setDeleteError] = useState('');
 
   const isEdited =
     new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() >
@@ -22,8 +22,8 @@ export const PostCard = ({ post }: PostCardProps) => {
   const shownDate = isEdited ? post.updatedAt : post.createdAt;
 
   return (
-    <Card className="gap-0 py-0 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="flex flex-row items-center gap-3 px-5 pt-5 pb-3">
+    <Card className="gap-0 rounded-sm py-0 shadow-sm transition-shadow hover:shadow-md">
+      <CardHeader className="flex flex-row items-center gap-3 px-6 pt-5 pb-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted font-semibold">
           {post.author.name.charAt(0).toUpperCase()}
         </div>
@@ -32,7 +32,9 @@ export const PostCard = ({ post }: PostCardProps) => {
           <p className="text-sm font-semibold">{post.author.name}</p>
           <p className="text-xs text-muted-foreground">
             @{post.author.username} · {isEdited && 'Edited '}
-            <time dateTime={shownDate}>{formatDateTime(shownDate)}</time>
+            <time dateTime={shownDate} title={formatDateTime(shownDate)}>
+              {formatRelativeTime(shownDate)}
+            </time>
           </p>
         </div>
 
@@ -46,12 +48,17 @@ export const PostCard = ({ post }: PostCardProps) => {
             >
               Edit
             </Button>
-            <DeletePostButton postId={post.id} />
+            <DeletePostButton postId={post.id} onError={setDeleteError} />
           </div>
         )}
       </CardHeader>
 
       <CardContent className="space-y-4 px-6 pb-6">
+        {deleteError && (
+          <p role="alert" className="text-sm text-destructive">
+            {deleteError}
+          </p>
+        )}
         {isEditing ? (
           <EditPostForm post={post} onDone={() => setIsEditing(false)} />
         ) : (
@@ -73,7 +80,7 @@ export const PostCard = ({ post }: PostCardProps) => {
                 src={post.imageUrl}
                 alt={`Image shared by ${post.author.name}`}
                 loading="lazy"
-                className="max-h-120 w-full rounded-lg border object-contain"
+                className="rounded-sm max-h-120 w-full object-contain"
               />
             )}
           </>

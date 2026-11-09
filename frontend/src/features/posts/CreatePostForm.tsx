@@ -12,8 +12,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { request } from '@/lib/api';
-import { createPostSchema, type CreatePostValues } from './postSchema';
+import {
+  createPostSchema,
+  type CreatePostValues,
+  POST_CONTENT_MAX_LENGTH,
+} from './postSchema';
 import { useMe } from '@/features/auth/useMe';
+import { cn } from '@/lib/utils';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -115,7 +120,7 @@ export const CreatePostForm = () => {
 
   if (!isOpen) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border bg-card p-6">
+      <div className="flex items-center justify-between gap-3 rounded-sm border bg-card p-6 shadow-sm">
         <div>
           <p className="text-sm font-semibold">
             Hello, {user?.name.split(' ')[0]}
@@ -134,7 +139,7 @@ export const CreatePostForm = () => {
     <form
       onSubmit={form.handleSubmit((values) => createPost.mutate(values))}
       noValidate
-      className="rounded-xl border bg-card p-5"
+      className="rounded-sm border bg-card p-5"
     >
       <FieldGroup>
         <Controller
@@ -164,10 +169,35 @@ export const CreatePostForm = () => {
               <Textarea
                 {...field}
                 id={field.name}
-                rows={4}
+                rows={10}
+                className="min-h-36 resize-y"
                 autoFocus
+                maxLength={POST_CONTENT_MAX_LENGTH}
                 aria-invalid={fieldState.invalid}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+
+                    if (!createPost.isPending) {
+                      void form.handleSubmit((values) =>
+                        createPost.mutate(values),
+                      )();
+                    }
+                  }
+                }}
               />
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  className="text-xs text-muted-foreground"
+                  aria-live="polite"
+                >
+                  {field.value.length} / {POST_CONTENT_MAX_LENGTH}
+                </span>
+
+                <span className="text-xs text-muted-foreground">
+                  Ctrl + Enter to post
+                </span>
+              </div>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
@@ -175,19 +205,19 @@ export const CreatePostForm = () => {
 
         {/* Image upload */}
         <Field>
-          <FieldLabel>Image (optional)</FieldLabel>
+          <FieldLabel htmlFor="post-image">Image (optional)</FieldLabel>
 
           <input
             ref={fileInputRef}
             id="post-image"
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
+            className="peer sr-only"
             onChange={(event) => selectImage(event.target.files?.[0])}
           />
 
           {preview ? (
-            <div className="relative overflow-hidden rounded-lg border">
+            <div className="relative overflow-hidden border">
               <img
                 src={preview}
                 alt="Selected image preview"
@@ -217,11 +247,13 @@ export const CreatePostForm = () => {
                 setIsDragging(false);
                 selectImage(event.dataTransfer.files[0]);
               }}
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary'
-              }`}
+              className={cn(
+                `flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed p-8 text-center transition-colors ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary'
+                }`,
+              )}
             >
               <p className="text-sm font-medium">
                 Drop an image here or click to browse

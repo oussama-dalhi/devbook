@@ -15,14 +15,19 @@ import { request } from '@/lib/api';
 
 type DeletePostButtonProps = {
   postId: number;
+  onError: (message: string) => void;
 };
 
-export const DeletePostButton = ({ postId }: DeletePostButtonProps) => {
+export const DeletePostButton = ({
+  postId,
+  onError,
+}: DeletePostButtonProps) => {
   const queryClient = useQueryClient();
 
   const deletePost = useMutation({
     mutationFn: () => request(`/posts/${postId}`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
+    onError: (error) => onError(error.message),
   });
 
   return (
@@ -49,12 +54,6 @@ export const DeletePostButton = ({ postId }: DeletePostButtonProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {deletePost.isError && (
-        <p role="alert" className="text-xs text-destructive">
-          {deletePost.error.message}
-        </p>
-      )}
     </>
   );
 };

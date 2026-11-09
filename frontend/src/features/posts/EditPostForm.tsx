@@ -54,7 +54,14 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
   });
 
   const onSubmit = (values: CreatePostValues) => {
-    // The API rejects empty strings, so send only fields with a new, non-empty value
+    let blocked = false;
+    for (const key of ['title', 'content'] as const) {
+      if (original[key] && values[key] === '') {
+        form.setError(key, { message: "The content cannot be cleared" });
+        blocked = true;
+      }
+    }
+    if (blocked) return;
     const changed = Object.fromEntries(
       Object.entries(values).filter(
         ([key, value]) =>
