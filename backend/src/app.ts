@@ -11,7 +11,15 @@ import { fileURLToPath } from 'node:url';
 export const app = express();
 
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        imgSrc: ["'self'", 'data:', 'blob:'],
+      },
+    },
+  }),
+);
 const trustProxy = process.env.TRUST_PROXY;
 app.set(
   'trust proxy',
