@@ -44,7 +44,7 @@ export const LoginPage = () => {
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
-      <h1 className="text-xl font-semibold">Log in</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
 
       <form
         onSubmit={form.handleSubmit((values) => login.mutate(values))}

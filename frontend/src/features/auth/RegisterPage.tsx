@@ -68,7 +68,7 @@ export const RegisterPage = () => {
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
-      <h1 className="text-xl font-semibold">Sign up</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Sign up</h1>
 
       <form
         onSubmit={form.handleSubmit((values) => register.mutate(values))}

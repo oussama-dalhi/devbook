@@ -12,6 +12,7 @@ export type User = {
 export const useMe = () =>
   useQuery({
     queryKey: ['me'],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       try {
         const { user } = await request<{ user: User }>('/auth/me');
