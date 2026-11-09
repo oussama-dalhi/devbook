@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import { adminRouter } from './routes/admin.js';
 import { postsRouter } from './routes/posts.js';
 import helmet from 'helmet';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const app = express();
 
@@ -38,6 +40,20 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/posts', postsRouter);
+
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../frontend/dist');
+  app.use(express.static(frontendDist));
+  app.get(/.*/, (req, res, next) => {
+    if (req.path === '/api' || req.path.startsWith('/api/')) {
+      next();
+      return;
+    }
+
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
