@@ -33,7 +33,7 @@ model User {
 model Post {
   id        Int      @id @default(autoincrement())
   title     String?  @db.VarChar(100)
-  content   String?  @db.VarChar(500)
+  content   String?  @db.VarChar(5000)
   imageUrl  String?  @db.VarChar(2048)
   imageFileId String?
   createdAt DateTime @default(now())
