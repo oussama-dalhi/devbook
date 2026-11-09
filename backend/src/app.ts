@@ -15,7 +15,7 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        imgSrc: ["'self'", 'data:', 'blob:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://ik.imagekit.io'],
       },
     },
   }),
@@ -37,7 +37,6 @@ app.set(
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 
-
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -50,7 +49,10 @@ app.use('/api/admin', adminRouter);
 app.use('/api/posts', postsRouter);
 
 if (process.env.NODE_ENV === 'production') {
-  const frontendDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../frontend/dist');
+  const frontendDist = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../frontend/dist',
+  );
   app.use(express.static(frontendDist));
   app.get(/.*/, (req, res, next) => {
     if (req.path === '/api' || req.path.startsWith('/api/')) {
