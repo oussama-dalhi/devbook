@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, request } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 export type User = {
   id: number;
@@ -11,7 +12,7 @@ export type User = {
 
 export const useMe = () =>
   useQuery({
-    queryKey: ['me'],
+    queryKey: queryKeys.me,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       try {

@@ -11,11 +11,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { request } from '@/lib/api';
-import { createPostSchema, type CreatePostValues } from './postSchema';
+import { queryKeys } from '@/lib/queryKeys';
+import {
+  POST_CONTENT_MAX_LENGTH,
+  POST_TITLE_MAX_LENGTH,
+  postFieldsSchema,
+  type PostFieldsValues,
+} from './postSchema';
 import type { Post } from './types';
 
 const fields: {
-  name: keyof CreatePostValues;
+  name: keyof PostFieldsValues;
   label: string;
   multiline?: boolean;
 }[] = [
@@ -31,13 +37,13 @@ type EditPostFormProps = {
 export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
   const queryClient = useQueryClient();
 
-  const original: CreatePostValues = {
+  const original: PostFieldsValues = {
     title: post.title ?? '',
     content: post.content ?? '',
   };
 
-  const form = useForm<CreatePostValues>({
-    resolver: zodResolver(createPostSchema),
+  const form = useForm<PostFieldsValues>({
+    resolver: zodResolver(postFieldsSchema),
     defaultValues: original,
   });
 
@@ -48,24 +54,27 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
         body: JSON.stringify(payload),
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.posts });
       onDone();
     },
   });
 
-  const onSubmit = (values: CreatePostValues) => {
+  const onSubmit = (values: PostFieldsValues) => {
+    // The API can't clear a field yet, so block emptying one that has text
     let blocked = false;
     for (const key of ['title', 'content'] as const) {
       if (original[key] && values[key] === '') {
-        form.setError(key, { message: "The content cannot be cleared" });
+        form.setError(key, { message: "This field can't be cleared" });
         blocked = true;
       }
     }
     if (blocked) return;
+
+    // Send only fields that changed and are not empty
     const changed = Object.fromEntries(
       Object.entries(values).filter(
         ([key, value]) =>
-          value !== '' && value !== original[key as keyof CreatePostValues],
+          value !== '' && value !== original[key as keyof PostFieldsValues],
       ),
     );
 
@@ -93,13 +102,15 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
                   <Textarea
                     {...field}
                     id={`edit-${post.id}-${field.name}`}
-                    rows={3}
+                    className="max-h-80 min-h-24 overflow-y-auto"
+                    maxLength={POST_CONTENT_MAX_LENGTH}
                     aria-invalid={fieldState.invalid}
                   />
                 ) : (
                   <Input
                     {...field}
                     id={`edit-${post.id}-${field.name}`}
+                    maxLength={POST_TITLE_MAX_LENGTH}
                     aria-invalid={fieldState.invalid}
                   />
                 )}

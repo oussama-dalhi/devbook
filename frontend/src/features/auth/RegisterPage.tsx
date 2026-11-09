@@ -1,11 +1,14 @@
+// src/features/auth/RegisterPage.tsx
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import * as z from 'zod';
+import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -41,12 +44,7 @@ const fields: {
   { name: 'name', label: 'Name', autoComplete: 'name' },
   { name: 'username', label: 'Username', autoComplete: 'username' },
   { name: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
-  {
-    name: 'password',
-    label: 'Password',
-    type: 'password',
-    autoComplete: 'new-password',
-  },
+  { name: 'password', label: 'Password', autoComplete: 'new-password' },
 ];
 
 export const RegisterPage = () => {
@@ -63,7 +61,7 @@ export const RegisterPage = () => {
         method: 'POST',
         body: JSON.stringify(values),
       }),
-    onSuccess: () => navigate('/login'),
+    onSuccess: () => navigate('/login', { state: { accountCreated: true } }),
   });
 
   return (
@@ -83,13 +81,25 @@ export const RegisterPage = () => {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-                  <Input
-                    {...field}
-                    id={field.name}
-                    type={type ?? 'text'}
-                    autoComplete={autoComplete}
-                    aria-invalid={fieldState.invalid}
-                  />
+                  {name === 'password' ? (
+                    <PasswordInput
+                      {...field}
+                      id={field.name}
+                      autoComplete={autoComplete}
+                      aria-invalid={fieldState.invalid}
+                    />
+                  ) : (
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type={type ?? 'text'}
+                      autoComplete={autoComplete}
+                      aria-invalid={fieldState.invalid}
+                    />
+                  )}
+                  {name === 'password' && (
+                    <FieldDescription>At least 8 characters</FieldDescription>
+                  )}
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}

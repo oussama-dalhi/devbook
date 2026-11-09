@@ -5,6 +5,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import * as z from 'zod';
 import { upload } from '../middleware/upload.js';
 import { uploadImage, deleteImage } from '../utils/image.js';
+import { createPostLimiter } from '../middleware/rate-limit.js';
 
 export const postsRouter = Router();
 
@@ -34,50 +35,60 @@ const postSelect = {
 
 // POST endpoints
 
-postsRouter.post('/', requireAuth, upload.single('image'), async (req, res) => {
-  const result = createPostSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({
-      errors: result.error.issues,
-    });
-  }
-  const { title, content } = result.data;
-  if (!content && !req.file) {
-    return res.status(400).json({
-      error: 'A post must contain text or an image',
-    });
-  }
-  const uploadedImage = req.file ? await uploadImage(req.file) : undefined;
-  let post;
-  try {
-    post = await prisma.post.create({
-      data: {
-        authorId: req.user!.id,
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
-        ...(uploadedImage && {
-          imageUrl: uploadedImage.url,
-          imageFileId: uploadedImage.fileId,
-        }),
-      },
-      select: postSelect,
-    });
-  } catch (error) {
-    // Avoid leaving an uploaded image if database creation fails
-    if (uploadedImage) {
-      try {
-        await deleteImage(uploadedImage.fileId);
-      } catch (cleanupError) {
-        console.error('Failed to clean up uploaded image:', cleanupError);
-      }
+postsRouter.post(
+  '/',
+  requireAuth,
+  createPostLimiter,
+  upload.single('image'),
+  async (req, res) => {
+    const result = createPostSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        errors: result.error.issues,
+      });
     }
+    const { title, content } = result.data;
+    if (!content && !req.file) {
+      return res.status(400).json({
+        error: 'A post must contain text or an image',
+      });
+    }
+    const uploadedImage = req.file ? await uploadImage(req.file) : undefined;
+    let post;
+    try {
+      post = await prisma.post.create({
+        data: {
+          authorId: req.user!.id,
+          ...(title !== undefined && { title }),
+          ...(content !== undefined && { content }),
+          ...(uploadedImage && {
+            imageUrl: uploadedImage.url,
+            imageFileId: uploadedImage.fileId,
+          }),
+        },
+        select: postSelect,
+      });
+    } catch (error) {
+      // Avoid leaving an uploaded image if database creation fails
+      if (uploadedImage) {
+        try {
+          await deleteImage(uploadedImage.fileId);
+        } catch (cleanupError) {
+          console.error('Failed to clean up uploaded image after post creation failed:', {
+            postId: null,
+            fileId: uploadedImage.fileId,
+            error: cleanupError,
+          });
+        }
+      }
 
-    throw error;
-  }
-  return res.status(201).json({
-    post,
-  });
-});
+      throw error;
+    }
+    return res.status(201).json({
+      post,
+    });
+  },
+);
 
 const postIdSchema = z.coerce.number().int().positive().max(2_147_483_647);
 postsRouter.patch('/:postId', requireAuth, async (req, res) => {
@@ -163,7 +174,11 @@ postsRouter.delete('/:postId', requireAuth, async (req, res) => {
       try {
         await deleteImage(post.imageFileId);
       } catch (error) {
-        console.error('Failed to delete ImageKit image:', error);
+        console.error('Failed to delete ImageKit image:', {
+          postId,
+          fileId: post.imageFileId,
+          error,
+        });
       }
     }
 

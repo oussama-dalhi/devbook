@@ -2,8 +2,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import * as z from 'zod';
+import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
 import {
   Field,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { request } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { User } from './useMe';
 
 const loginSchema = z.object({
@@ -22,6 +24,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export const LoginPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -37,7 +40,8 @@ export const LoginPage = () => {
         body: JSON.stringify(values),
       }),
     onSuccess: ({ user }) => {
-      queryClient.setQueryData(['me'], user);
+      queryClient.setQueryData(queryKeys.me, user);
+      queryClient.setQueryData(queryKeys.sessionExpired, false);
       navigate('/');
     },
   });
@@ -45,6 +49,12 @@ export const LoginPage = () => {
   return (
     <div className="mx-auto max-w-sm space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
+
+      {location.state?.accountCreated === true && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Account created. You can log in now.
+        </p>
+      )}
 
       <form
         onSubmit={form.handleSubmit((values) => login.mutate(values))}
@@ -76,10 +86,9 @@ export const LoginPage = () => {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={field.name}>Password</FieldLabel>
-                <Input
+                <PasswordInput
                   {...field}
                   id={field.name}
-                  type="password"
                   autoComplete="current-password"
                   aria-invalid={fieldState.invalid}
                 />

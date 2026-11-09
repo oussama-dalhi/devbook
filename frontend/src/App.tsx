@@ -4,7 +4,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { FeedPage } from '@/features/posts/FeedPage';
 import { GuestRoute } from '@/features/auth/GuestRoute';
-import { NotFoundPage } from './components/NotFoundPage';
+import { NotFoundPage } from '@/components/NotFoundPage';
 
 const App = () => {
   return (
@@ -15,8 +15,8 @@ const App = () => {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

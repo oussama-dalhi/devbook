@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Field,
   FieldError,
@@ -11,19 +12,20 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import type { User } from '@/features/auth/useMe';
 import { request } from '@/lib/api';
-import {
-  createPostSchema,
-  type CreatePostValues,
-  POST_CONTENT_MAX_LENGTH,
-} from './postSchema';
-import { useMe } from '@/features/auth/useMe';
+import { queryKeys } from '@/lib/queryKeys';
 import { cn } from '@/lib/utils';
+import {
+  POST_CONTENT_MAX_LENGTH,
+  postFieldsSchema,
+  type PostFieldsValues,
+} from './postSchema';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export const CreatePostForm = () => {
+export const CreatePostForm = ({ user }: { user: User }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -32,15 +34,14 @@ export const CreatePostForm = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: user } = useMe();
   const queryClient = useQueryClient();
 
-  const form = useForm<CreatePostValues>({
-    resolver: zodResolver(createPostSchema),
+  const form = useForm<PostFieldsValues>({
+    resolver: zodResolver(postFieldsSchema),
     defaultValues: { title: '', content: '' },
   });
 
-  // Create and clean up the image preview URL.
+  // Clean up the image preview URL when it changes or the form unmounts.
   useEffect(() => {
     return () => {
       if (preview) {
@@ -67,6 +68,7 @@ export const CreatePostForm = () => {
     setImage(file);
     setPreview(URL.createObjectURL(file));
   };
+
   const removeImage = () => {
     setImage(null);
     setPreview(null);
@@ -76,8 +78,9 @@ export const CreatePostForm = () => {
       fileInputRef.current.value = '';
     }
   };
+
   const createPost = useMutation({
-    mutationFn: async (values: CreatePostValues) => {
+    mutationFn: async (values: PostFieldsValues) => {
       const content = values.content.trim();
       const title = values.title.trim();
 
@@ -98,16 +101,9 @@ export const CreatePostForm = () => {
     },
     onSuccess: () => {
       form.reset();
-      setImage(null);
-      setPreview(null);
-      setImageError('');
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
+      removeImage();
       setIsOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts });
     },
   });
 
@@ -120,10 +116,10 @@ export const CreatePostForm = () => {
 
   if (!isOpen) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-sm border bg-card p-6 shadow-sm">
+      <Card className="flex-row items-center justify-between gap-3 rounded-sm p-6 shadow-sm">
         <div>
           <p className="text-sm font-semibold">
-            Hello, {user?.name.split(' ')[0]}
+            Hello, {user.name.split(' ')[0]}
           </p>
           <p className="text-xs text-muted-foreground">
             What are you working on?
@@ -131,162 +127,176 @@ export const CreatePostForm = () => {
         </div>
 
         <Button onClick={() => setIsOpen(true)}>Create post</Button>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <form
-      onSubmit={form.handleSubmit((values) => createPost.mutate(values))}
-      noValidate
-      className="rounded-sm border bg-card p-5"
-    >
-      <FieldGroup>
-        <Controller
-          name="title"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Title (optional)</FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        <Controller
-          name="content"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>
-                What are you working on?
-              </FieldLabel>
-              <Textarea
-                {...field}
-                id={field.name}
-                rows={10}
-                className="min-h-36 resize-y"
-                autoFocus
-                maxLength={POST_CONTENT_MAX_LENGTH}
-                aria-invalid={fieldState.invalid}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-
-                    if (!createPost.isPending) {
-                      void form.handleSubmit((values) =>
-                        createPost.mutate(values),
-                      )();
-                    }
-                  }
-                }}
-              />
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  className="text-xs text-muted-foreground"
-                  aria-live="polite"
-                >
-                  {field.value.length} / {POST_CONTENT_MAX_LENGTH}
-                </span>
-
-                <span className="text-xs text-muted-foreground">
-                  Ctrl + Enter to post
-                </span>
-              </div>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        {/* Image upload */}
-        <Field>
-          <FieldLabel htmlFor="post-image">Image (optional)</FieldLabel>
-
-          <input
-            ref={fileInputRef}
-            id="post-image"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="peer sr-only"
-            onChange={(event) => selectImage(event.target.files?.[0])}
+    <Card className="rounded-sm p-0 shadow-sm">
+      <form
+        onSubmit={form.handleSubmit((values) => createPost.mutate(values))}
+        noValidate
+        className="p-6"
+      >
+        <FieldGroup>
+          <Controller
+            name="title"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Title (optional)</FieldLabel>
+                <Input
+                  {...field}
+                  id={field.name}
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
           />
 
-          {preview ? (
-            <div className="relative overflow-hidden border">
-              <img
-                src={preview}
-                alt="Selected image preview"
-                className="max-h-80 w-full object-contain"
-              />
+          <Controller
+            name="content"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>
+                  What are you working on?
+                </FieldLabel>
+                <Textarea
+                  {...field}
+                  id={field.name}
+                  className="max-h-80 min-h-36 overflow-y-auto"
+                  autoFocus
+                  maxLength={POST_CONTENT_MAX_LENGTH}
+                  aria-invalid={fieldState.invalid}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
 
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute right-2 top-2"
-                onClick={removeImage}
-              >
-                Remove image
-              </Button>
-            </div>
-          ) : (
-            <label
-              htmlFor="post-image"
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={(event) => {
-                event.preventDefault();
-                setIsDragging(false);
-                selectImage(event.dataTransfer.files[0]);
-              }}
-              className={cn(
-                `flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed p-8 text-center transition-colors ${
+                      if (!createPost.isPending) {
+                        void form.handleSubmit((values) =>
+                          createPost.mutate(values),
+                        )();
+                      }
+                    }
+                  }}
+                />
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className="text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {field.value.length} / {POST_CONTENT_MAX_LENGTH}
+                  </span>
+
+                  <span className="text-xs text-muted-foreground">
+                    Ctrl + Enter to post
+                  </span>
+                </div>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          {/* Image upload */}
+          <Field>
+            <FieldLabel htmlFor="post-image">Image (optional)</FieldLabel>
+
+            <input
+              ref={fileInputRef}
+              id="post-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="peer sr-only"
+              onChange={(event) => selectImage(event.target.files?.[0])}
+            />
+
+            {preview ? (
+              <div className="relative overflow-hidden rounded-sm border">
+                <img
+                  src={preview}
+                  alt="Selected image preview"
+                  className="max-h-80 w-full object-contain"
+                />
+
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
+                >
+                  Remove image
+                </Button>
+              </div>
+            ) : (
+              <label
+                htmlFor="post-image"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(event) => {
+                  // Ignore leave events caused by moving over child elements
+                  if (
+                    !event.currentTarget.contains(
+                      event.relatedTarget as Node | null,
+                    )
+                  ) {
+                    setIsDragging(false);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDragging(false);
+                  selectImage(event.dataTransfer.files[0]);
+                }}
+                className={cn(
+                  'flex cursor-pointer flex-col items-center justify-center rounded-sm border-2 border-dashed p-8 text-center transition-colors',
+                  'peer-focus-visible:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50',
                   isDragging
                     ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary'
-                }`,
-              )}
-            >
-              <p className="text-sm font-medium">
-                Drop an image here or click to browse
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                JPEG, PNG or WebP · Maximum 5 MB
-              </p>
-            </label>
-          )}
+                    : 'border-border hover:border-primary',
+                )}
+              >
+                <p className="text-sm font-medium">
+                  Drop an image here or click to browse
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  JPEG, PNG or WebP · Maximum 5 MB
+                </p>
+              </label>
+            )}
 
-          {imageError && (
+            {imageError && (
+              <p role="alert" className="text-sm text-destructive">
+                {imageError}
+              </p>
+            )}
+          </Field>
+
+          {createPost.isError && (
             <p role="alert" className="text-sm text-destructive">
-              {imageError}
+              {createPost.error.message}
             </p>
           )}
-        </Field>
 
-        {createPost.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {createPost.error.message}
-          </p>
-        )}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={createPost.isPending}>
+              {createPost.isPending ? 'Posting…' : 'Post'}
+            </Button>
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={createPost.isPending}>
-            {createPost.isPending ? 'Posting…' : 'Post'}
-          </Button>
-
-          <Button type="button" variant="outline" onClick={closeForm}>
-            Cancel
-          </Button>
-        </div>
-      </FieldGroup>
-    </form>
+            <Button type="button" variant="outline" onClick={closeForm}>
+              Cancel
+            </Button>
+          </div>
+        </FieldGroup>
+      </form>
+    </Card>
   );
 };

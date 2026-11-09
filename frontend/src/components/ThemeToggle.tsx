@@ -10,7 +10,11 @@ export const ThemeToggle = () => {
   const toggle = () => {
     const next = !isDark;
     document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
+    try {
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+    } catch {
+      // storage unavailable; the theme still switches for this visit
+    }
     setIsDark(next);
   };
 

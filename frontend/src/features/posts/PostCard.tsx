@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DeletePostButton } from './DeletePostButton';
 import { EditPostForm } from './EditPostForm';
 import type { Post } from './types';
@@ -43,12 +43,20 @@ export const PostCard = ({ post, currentUserId }: PostCardProps) => {
             <Button
               variant="ghost"
               size="sm"
+              aria-label={`Edit post by ${post.author.name}`}
               disabled={isEditing}
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setDeleteError('');
+                setIsEditing(true);
+              }}
             >
               Edit
             </Button>
-            <DeletePostButton postId={post.id} onError={setDeleteError} />
+            <DeletePostButton
+              postId={post.id}
+              onError={setDeleteError}
+              label={`Delete post by ${post.author.name}`}
+            />
           </div>
         )}
       </CardHeader>
@@ -64,9 +72,9 @@ export const PostCard = ({ post, currentUserId }: PostCardProps) => {
         ) : (
           <>
             {post.title && (
-              <CardTitle className="text-lg font-semibold tracking-tight">
+              <h2 className="text-lg font-semibold tracking-tight">
                 {post.title}
-              </CardTitle>
+              </h2>
             )}
 
             {post.content && (
@@ -80,7 +88,7 @@ export const PostCard = ({ post, currentUserId }: PostCardProps) => {
                 src={post.imageUrl}
                 alt={`Image shared by ${post.author.name}`}
                 loading="lazy"
-                className="rounded-sm max-h-120 w-full object-contain"
+                className="rounded-sm border max-h-120 w-full object-contain"
               />
             )}
           </>

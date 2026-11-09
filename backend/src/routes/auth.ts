@@ -5,6 +5,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { DUMMY_HASH, hashPassword, verifyPassword } from '../utils/password.js';
 import { createAccessToken } from '../utils/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
+import { loginLimiter, registerLimiter } from '../middleware/rate-limit.js';
 
 export const authRouter = Router();
 
@@ -17,7 +18,7 @@ const registerSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-authRouter.post('/register', async (req, res) => {
+authRouter.post('/register', registerLimiter, async (req, res) => {
   const result = registerSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
@@ -66,7 +67,7 @@ const loginSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', loginLimiter, async (req, res) => {
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({

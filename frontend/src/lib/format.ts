@@ -1,9 +1,6 @@
-const TIME_ZONE = 'Africa/Casablanca';
-
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
   timeStyle: 'short',
-  timeZone: TIME_ZONE,
 });
 
 export const formatDateTime = (iso: string) =>
@@ -15,7 +12,6 @@ const relativeFormat = new Intl.RelativeTimeFormat(undefined, {
 
 const shortDateFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
-  timeZone: TIME_ZONE,
 });
 
 export const formatRelativeTime = (iso: string): string => {

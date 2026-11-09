@@ -11,7 +11,7 @@ export const PostSkeleton = ({
   withTitle = true,
 }: PostSkeletonProps) => {
   return (
-    <Card className="gap-0 py-0 shadow-sm" aria-hidden="true">
+    <Card className="gap-0 rounded-sm py-0 shadow-sm" aria-hidden="true">
       <CardHeader className="flex flex-row items-center gap-3 px-6 pt-5 pb-3">
         <Skeleton className="size-10 shrink-0 rounded-full" />
 
@@ -30,7 +30,7 @@ export const PostSkeleton = ({
           <Skeleton className="h-4 w-3/5" />
         </div>
 
-        {withImage && <Skeleton className="h-64 max-h-120 w-full rounded-lg" />}
+        {withImage && <Skeleton className="h-64 max-h-120 w-full rounded-sm" />}
       </CardContent>
     </Card>
   );

@@ -5,8 +5,9 @@ import { getPosts } from './api';
 import { PostCard } from './PostCard';
 import { useMe } from '@/features/auth/useMe';
 import { CreatePostForm } from './CreatePostForm';
-import { GuestPrompt } from '../auth/GuestPrompt';
+import { GuestPrompt } from '@/features/auth/GuestPrompt';
 import { PostSkeleton } from './PostSkeleton';
+import { queryKeys } from '@/lib/queryKeys';
 
 export const FeedPage = () => {
   const {
@@ -21,7 +22,7 @@ export const FeedPage = () => {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['posts'],
+    queryKey: queryKeys.posts,
     queryFn: ({ pageParam }) => getPosts(pageParam),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
@@ -56,8 +57,9 @@ export const FeedPage = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Feed</h1>
 
-        <div className="space-y-4" aria-label="Loading posts" aria-busy="true">
-          <PostSkeleton />
+        <div className="space-y-4" role="status" aria-busy="true">
+          <span className="sr-only">Loading posts</span>
+          <PostSkeleton withTitle={false} />
           <PostSkeleton withTitle />
           <PostSkeleton withImage />
         </div>
@@ -79,7 +81,7 @@ export const FeedPage = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Feed</h1>
-      {user && <CreatePostForm />}
+      {user && <CreatePostForm user={user} />}
       {user === null && <GuestPrompt />}
 
       {posts.length === 0 && (

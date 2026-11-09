@@ -1,9 +1,16 @@
 import { type ErrorRequestHandler } from 'express';
 import multer from 'multer';
+import { HttpError } from '../utils/http-error.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   // prevents sending multiple responses if headers are already sent
   if (res.headersSent) return next(err);
+
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({
+      error: err.message,
+    });
+  }
 
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -12,9 +19,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
       });
     }
 
-    return res.status(400).json({
-      error: 'Invalid upload request',
-    });
+    return res.status(400).json({ error: err.message });
   }
 
   const status = err?.status ?? err?.statusCode;
