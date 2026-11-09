@@ -1,5 +1,6 @@
 import multer from 'multer';
 import type { Request } from 'express';
+import { HttpError } from '../utils/http-error.js';
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -11,7 +12,7 @@ const fileFilter = (
   callback: multer.FileFilterCallback,
 ) => {
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    return callback(new Error('Only JPEG, PNG and WebP images are allowed'));
+    return callback(new HttpError(400, 'Only JPEG, PNG and WebP images are allowed'));
   }
 
   callback(null, true);

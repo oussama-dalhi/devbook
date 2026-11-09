@@ -1,6 +1,7 @@
 import { toFile } from '@imagekit/nodejs';
 import { fileTypeFromBuffer } from 'file-type';
 import { imagekit } from '../lib/imagekit.js';
+import { HttpError } from './http-error.js';
 
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -15,7 +16,7 @@ export const uploadImage = async (
     !allowedTypes.includes(detectedType.mime) ||
     detectedType.mime !== file.mimetype
   ) {
-    throw new Error('Invalid or unsupported image file');
+    throw new HttpError(400, 'Invalid or unsupported image file');
   }
 
   // Upload to ImageKit
