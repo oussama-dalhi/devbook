@@ -2,6 +2,8 @@
 
 A full-stack social platform where developers share ideas, project updates and images. Built with React, Express, PostgreSQL and TypeScript.
 
+**Live demo:** [devbook.oussama-dalhi.dev](https://devbook.oussama-dalhi.dev)
+
 ![Devbook Feed Screenshot](./frontend/src/assets/feed.png)
 ![Devbook Create Post Screenshot](./frontend/src/assets/post.png)
 ![Devbook Edit Post Screenshot](./frontend/src/assets/edit.png)
@@ -13,6 +15,7 @@ A full-stack social platform where developers share ideas, project updates and i
 - [Getting started](#getting-started)
 - [Environment variables](#environment-variables)
 - [Scripts](#scripts)
+- [Project structure](#project-structure)
 - [API overview](#api-overview)
 - [Security](#security)
 - [Deployment](#deployment)
@@ -188,8 +191,6 @@ The server also exposes `GET /health` for uptime checks.
 2. Set `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET` and `IMAGEKIT_PRIVATE_KEY` on the server. If a reverse proxy sits in front of the API, also set `TRUST_PROXY` (usually `1`). Without it, rate limiting sees every visitor as one IP address.
 3. Build and start the API:
 
-   Use `npm run db:deploy` to apply migrations in production. Do not run `migrate dev` there.
-
    ```bash
    cd backend
    npm ci
@@ -197,6 +198,8 @@ The server also exposes `GET /health` for uptime checks.
    npm run db:deploy
    npm start
    ```
+
+   Use `npm run db:deploy` to apply migrations in production. Do not run `migrate dev` there.
 4. Build the frontend with `npm run build` in `frontend/` and serve the `dist/` folder.
 
 ## Known limitations and roadmap
@@ -227,8 +230,6 @@ Along the way I learned how to:
 - build an infinite-scrolling feed with TanStack Query.
 
 Devbook is an ongoing project, and I plan to keep adding features.
-
-## License
 
 ## License
 
