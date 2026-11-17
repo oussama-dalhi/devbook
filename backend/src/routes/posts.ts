@@ -33,8 +33,6 @@ const postSelect = {
   author: { select: { id: true, username: true, name: true } },
 } satisfies Prisma.PostSelect;
 
-// POST endpoints
-
 postsRouter.post(
   '/',
   requireAuth,
@@ -69,7 +67,7 @@ postsRouter.post(
         select: postSelect,
       });
     } catch (error) {
-      // Avoid leaving an uploaded image if database creation fails
+      // Roll back the remote upload if database creation fails.
       if (uploadedImage) {
         try {
           await deleteImage(uploadedImage.fileId);
@@ -161,7 +159,6 @@ postsRouter.delete('/:postId', requireAuth, async (req, res) => {
       });
     }
 
-    // Delete the database record
     await prisma.post.delete({
       where: {
         id: postId,
@@ -169,7 +166,6 @@ postsRouter.delete('/:postId', requireAuth, async (req, res) => {
       },
     });
 
-    // delete ImageKit v image, if one exists.
     if (post.imageFileId) {
       try {
         await deleteImage(post.imageFileId);
@@ -196,8 +192,6 @@ postsRouter.delete('/:postId', requireAuth, async (req, res) => {
     throw error;
   }
 });
-
-// GET endpoints
 
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),

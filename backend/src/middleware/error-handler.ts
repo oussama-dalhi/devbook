@@ -3,7 +3,6 @@ import multer from 'multer';
 import { HttpError } from '../utils/http-error.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  // prevents sending multiple responses if headers are already sent
   if (res.headersSent) return next(err);
 
   if (err instanceof HttpError) {

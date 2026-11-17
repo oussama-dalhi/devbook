@@ -15,7 +15,6 @@ import App from './App.tsx';
 
 const handleUnauthorized = (error: Error, isMutation = false) => {
   if (error instanceof ApiError && error.status === 401) {
-    // Only show "session expired" if someone was logged in when the action failed
     if (isMutation && queryClient.getQueryData(queryKeys.me)) {
       queryClient.setQueryData(queryKeys.sessionExpired, true);
     }

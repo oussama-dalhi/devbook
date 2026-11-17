@@ -1,4 +1,3 @@
-// backend/src/routes/auth.ts
 import { Router, type Response } from "express";
 import { createHash, randomBytes } from "node:crypto";
 import * as z from "zod";
@@ -149,7 +148,6 @@ authRouter.post("/login", loginLimiter, async (req, res) => {
     });
   }
 
-  // Remove this user's expired sessions so the table does not grow forever
   await prisma.refreshSession.deleteMany({
     where: { userId: user.id, expiresAt: { lte: new Date() } },
   });

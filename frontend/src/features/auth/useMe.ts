@@ -19,7 +19,7 @@ export const useMe = () =>
         const { user } = await request<{ user: User }>('/auth/me');
         return user;
       } catch (e) {
-        if (e instanceof ApiError && e.status === 401) return null; // not logged in
+        if (e instanceof ApiError && e.status === 401) return null;
         throw e;
       }
     },

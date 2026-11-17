@@ -35,7 +35,7 @@ export const GuestPrompt = () => {
       try {
         sessionStorage.setItem(STORAGE_KEY, '1');
       } catch {
-        // storage can be unavailable (private mode);
+        return;
       }
     }
   };

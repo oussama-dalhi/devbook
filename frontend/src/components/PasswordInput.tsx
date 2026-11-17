@@ -1,4 +1,3 @@
-// src/components/PasswordInput.tsx
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,8 +16,7 @@ export const PasswordInput = ({ className, ...props }: PasswordInputProps) => {
         type={visible ? 'text' : 'password'}
         className={cn('pr-10', className)}
       />
-      {/* inset-y-0 + my-auto centers the button without a transform,
-          so the Button's active:translate-y-px press effect can't move it out of place */}
+      {/* Keep the toggle centered when the button is pressed. */}
       <Button
         type="button"
         variant="ghost"

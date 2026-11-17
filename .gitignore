@@ -1,32 +1,17 @@
-# =====================================
-# Dependencies
-# =====================================
 node_modules/
 
-# =====================================
-# Environment variables and secrets
-# =====================================
 .env
 .env.*
 !.env.example
 
-# =====================================
-# Generated Prisma Client
-# =====================================
 /backend/src/generated/prisma/
 
-# =====================================
-# Build output and metadata
-# =====================================
 dist/
 dist-ssr/
 build/
 *.tsbuildinfo
 *.local
 
-# =====================================
-# Logs
-# =====================================
 logs/
 *.log
 npm-debug.log*
@@ -35,9 +20,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# =====================================
-# OS and editor files
-# =====================================
 .DS_Store
 Thumbs.db
 

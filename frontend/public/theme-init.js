@@ -9,6 +9,5 @@
       document.documentElement.classList.add('dark');
     }
   } catch {
-    // Ignore storage errors
   }
 })();

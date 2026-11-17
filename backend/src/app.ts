@@ -17,7 +17,7 @@ const parseTrustProxy = (
   if (value === undefined || value === "" || value === "false") return false;
   if (value === "true") return true;
   if (/^\d+$/.test(value)) return Number(value);
-  return value; // for example "loopback" or a subnet
+  return value;
 };
 
 app.disable("x-powered-by");
@@ -32,7 +32,6 @@ app.use(
 );
 const trustProxy = process.env.TRUST_PROXY;
 app.set("trust proxy", parseTrustProxy(trustProxy));
-// Parse JSON
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
@@ -62,9 +61,8 @@ if (process.env.NODE_ENV === "production") {
 
   app.use(
     express.static(frontendDist, {
-      index: false, // "/" is handled below so index.html is never cached
+      index: false,
       setHeaders: (res, filePath) => {
-        // Files in /assets have a hash in their name, so they can be cached for a year
         if (filePath.includes(`${path.sep}assets${path.sep}`)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         }
@@ -73,7 +71,6 @@ if (process.env.NODE_ENV === "production") {
   );
 
   app.get(/.*/, (req, res, next) => {
-    // API routes and requests for files (anything with an extension) are not pages
     if (
       req.path === "/api" ||
       req.path.startsWith("/api/") ||
@@ -83,7 +80,7 @@ if (process.env.NODE_ENV === "production") {
       return;
     }
 
-    res.setHeader("Cache-Control", "no-cache"); // always load the newest index.html after a deploy
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(indexFile, (error) => {
       if (error) next(error);
     });

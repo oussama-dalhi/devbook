@@ -13,7 +13,8 @@ export const ThemeToggle = () => {
     try {
       localStorage.setItem('theme', next ? 'dark' : 'light');
     } catch {
-      // storage unavailable; the theme still switches for this visit
+      setIsDark(next);
+      return;
     }
     setIsDark(next);
   };

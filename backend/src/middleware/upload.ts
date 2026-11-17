@@ -1,4 +1,3 @@
-// backend/src/middleware/upload.ts
 import multer from 'multer';
 import type { Request } from 'express';
 import { HttpError } from '../utils/http-error.js';
@@ -28,7 +27,6 @@ export const upload = multer({
     fileSize: 5 * 1024 * 1024,
     files: 1,
     fields: 5,
-    // Measured in bytes.
     fieldSize: 32 * 1024,
   },
 });

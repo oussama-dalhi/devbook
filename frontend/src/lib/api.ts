@@ -47,8 +47,6 @@ const isApiIssue = (value: unknown): value is ApiIssue =>
   'message' in value &&
   typeof value.message === 'string';
 
-// Validation problems arrive as `issues`, or as `errors` from routes that
-// have not been moved to the new format yet.
 const readIssues = (response: object): ApiIssue[] | undefined => {
   const raw =
     'issues' in response

@@ -115,7 +115,6 @@ export const FeedPage = () => {
         </div>
       )}
 
-      {/* End of feed */}
       {!hasNextPage && posts.length > 0 && (
         <p className="py-4 text-center text-sm text-muted-foreground">
           You've reached the end of the feed.

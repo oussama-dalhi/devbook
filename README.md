@@ -65,7 +65,7 @@ Create `backend/.env` (see [Environment variables](#environment-variables)), the
 
 ```bash
 npm run db:migrate   # creates the database tables
-npm run dev          # API on http://localhost:3000
+npm run dev
 ```
 
 ### 3. Start the frontend
@@ -75,7 +75,7 @@ In a second terminal:
 ```bash
 cd frontend
 npm install
-npm run dev          # app on http://localhost:5173
+npm run dev
 ```
 
 In development, Vite proxies requests from `/api` to the backend on port 3000, so no CORS setup is needed.
@@ -187,11 +187,14 @@ The server also exposes `GET /health` for uptime checks.
 1. **Serve the frontend and the API from the same domain,** with `/api` routed to Express. The session cookie is `SameSite=Strict`, and the Vite proxy exists only in development.
 2. Set `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET` and `IMAGEKIT_PRIVATE_KEY` on the server. If a reverse proxy sits in front of the API, also set `TRUST_PROXY` (usually `1`). Without it, rate limiting sees every visitor as one IP address.
 3. Build and start the API:
+
+   Use `npm run db:deploy` to apply migrations in production. Do not run `migrate dev` there.
+
    ```bash
    cd backend
    npm ci
    npm run build
-   npm run db:deploy    # applies migrations; never run `migrate dev` in production
+   npm run db:deploy
    npm start
    ```
 4. Build the frontend with `npm run build` in `frontend/` and serve the `dist/` folder.

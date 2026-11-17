@@ -41,7 +41,7 @@ export const CreatePostForm = ({ user }: { user: User }) => {
     defaultValues: { title: '', content: '' },
   });
 
-  // Clean up the image preview URL when it changes or the form unmounts.
+  // Release the preview URL when the selected file changes.
   useEffect(() => {
     return () => {
       if (preview) {
@@ -209,7 +209,6 @@ export const CreatePostForm = ({ user }: { user: User }) => {
             )}
           />
 
-          {/* Image upload */}
           <Field>
             <FieldLabel htmlFor="post-image">Image (optional)</FieldLabel>
 
@@ -248,7 +247,7 @@ export const CreatePostForm = ({ user }: { user: User }) => {
                   setIsDragging(true);
                 }}
                 onDragLeave={(event) => {
-                  // Ignore leave events caused by moving over child elements
+                  // Ignore transitions between child elements.
                   if (
                     !event.currentTarget.contains(
                       event.relatedTarget as Node | null,

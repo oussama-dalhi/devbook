@@ -1,12 +1,9 @@
-// backend/src/server.ts
 import { app } from './app.js';
 import { prisma } from './db/prisma.js';
 import { getJwtSecret } from './utils/jwt.js';
 
-// Fail at startup, not on the first login, if the secret is missing or too short
 getJwtSecret();
 
-// An empty PORT (for example copied from .env.example) means "use the default"
 const port = Number(process.env.PORT || 3000);
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -27,7 +24,6 @@ server.on('error', (error) => {
 const shutdown = (signal: string) => {
   console.log(`${signal} received, shutting down`);
 
-  // Give in-flight requests 10 seconds, then exit anyway
   setTimeout(() => {
     console.error('Forced shutdown after timeout');
     process.exit(1);

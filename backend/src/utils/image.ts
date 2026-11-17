@@ -9,7 +9,6 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 export const uploadImage = async (
   file: Express.Multer.File,
 ): Promise<{ url: string; fileId: string }> => {
-  // Inspect the actual file contents
   let detectedType;
   try {
     detectedType = await fileTypeFromBuffer(file.buffer);
@@ -25,7 +24,6 @@ export const uploadImage = async (
     throw new HttpError(400, 'Invalid or unsupported image file');
   }
 
-  // Upload to ImageKit
   const fileName = `${randomUUID()}.${detectedType.ext}`;
   const response = await imagekit.files.upload({
     file: await toFile(file.buffer, fileName),

@@ -5,9 +5,7 @@
   - Added the required column `name` to the `User` table without a default value. This is not possible if the table is not empty.
 
 */
--- AlterTable
 ALTER TABLE "Post" ADD COLUMN     "title" VARCHAR(100);
 
--- AlterTable
 ALTER TABLE "User" DROP COLUMN "isActive",
 ADD COLUMN     "name" VARCHAR(100) NOT NULL;

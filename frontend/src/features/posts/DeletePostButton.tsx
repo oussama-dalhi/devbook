@@ -1,4 +1,3 @@
-// src/features/posts/DeletePostButton.tsx
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -32,7 +31,7 @@ export const DeletePostButton = ({
 
   const deletePost = useMutation({
     mutationFn: () => request(`/posts/${postId}`, { method: 'DELETE' }),
-    onMutate: () => onError(''), // clear any old error before trying again
+    onMutate: () => onError(''),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.posts }),
     onError: (error) => onError(error.message),

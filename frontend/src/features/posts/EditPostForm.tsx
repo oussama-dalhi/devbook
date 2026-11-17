@@ -60,7 +60,6 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
   });
 
   const onSubmit = (values: PostFieldsValues) => {
-    // The API can't clear a field yet, so block emptying one that has text
     let blocked = false;
     for (const key of ['title', 'content'] as const) {
       if (original[key] && values[key] === '') {
@@ -70,7 +69,6 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
     }
     if (blocked) return;
 
-    // Send only fields that changed and are not empty
     const changed = Object.fromEntries(
       Object.entries(values).filter(
         ([key, value]) =>
@@ -79,7 +77,7 @@ export const EditPostForm = ({ post, onDone }: EditPostFormProps) => {
     );
 
     if (Object.keys(changed).length === 0) {
-      onDone(); // nothing changed, so skip the request
+      onDone();
       return;
     }
     editPost.mutate(changed);

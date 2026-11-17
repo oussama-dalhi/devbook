@@ -1,4 +1,3 @@
-// src/components/Layout.tsx
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Outlet } from 'react-router';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -11,7 +10,6 @@ export const Layout = () => {
   const queryClient = useQueryClient();
   const { data: user, isPending } = useMe();
 
-  // A small flag stored in the query cache, set by the global 401 handler in main.tsx
   const { data: sessionExpired } = useQuery({
     queryKey: queryKeys.sessionExpired,
     queryFn: () => false,
