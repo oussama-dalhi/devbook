@@ -230,4 +230,6 @@ Devbook is an ongoing project, and I plan to keep adding features.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
