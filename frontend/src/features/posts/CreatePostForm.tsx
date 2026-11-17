@@ -56,11 +56,17 @@ export const CreatePostForm = ({ user }: { user: User }) => {
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
+      setImage(null);
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setImageError('Only JPEG, PNG and WebP images are allowed.');
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
+      setImage(null);
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setImageError('Image must be smaller than 5 MB.');
       return;
     }
