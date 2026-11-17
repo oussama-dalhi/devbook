@@ -1,3 +1,4 @@
+// backend/src/middleware/upload.ts
 import multer from 'multer';
 import type { Request } from 'express';
 import { HttpError } from '../utils/http-error.js';
@@ -12,7 +13,9 @@ const fileFilter = (
   callback: multer.FileFilterCallback,
 ) => {
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    return callback(new HttpError(400, 'Only JPEG, PNG and WebP images are allowed'));
+    return callback(
+      new HttpError(400, 'Only JPEG, PNG and WebP images are allowed'),
+    );
   }
 
   callback(null, true);
@@ -25,6 +28,7 @@ export const upload = multer({
     fileSize: 5 * 1024 * 1024,
     files: 1,
     fields: 5,
-    fieldSize: 10 * 1024,
+    // Measured in bytes.
+    fieldSize: 32 * 1024,
   },
 });
