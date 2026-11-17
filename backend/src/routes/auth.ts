@@ -1,12 +1,17 @@
-import { Router } from 'express';
-import { createHash, randomBytes } from 'node:crypto';
-import * as z from 'zod';
-import { prisma } from '../db/prisma.js';
-import { Prisma } from '../generated/prisma/client.js';
-import { DUMMY_HASH, hashPassword, verifyPassword } from '../utils/password.js';
-import { createAccessToken } from '../utils/jwt.js';
-import { requireAuth } from '../middleware/auth.js';
-import { loginLimiter, registerLimiter } from '../middleware/rate-limit.js';
+// backend/src/routes/auth.ts
+import { Router, type Response } from "express";
+import { createHash, randomBytes } from "node:crypto";
+import * as z from "zod";
+import { prisma } from "../db/prisma.js";
+import { Prisma } from "../generated/prisma/client.js";
+import { DUMMY_HASH, hashPassword, verifyPassword } from "../utils/password.js";
+import { createAccessToken } from "../utils/jwt.js";
+import { requireAuth } from "../middleware/auth.js";
+import {
+  loginLimiter,
+  refreshLimiter,
+  registerLimiter,
+} from "../middleware/rate-limit.js";
 
 export const authRouter = Router();
 
@@ -14,42 +19,42 @@ const REFRESH_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
 const accessCookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
   maxAge: 15 * 60 * 1000,
-  path: '/',
+  path: "/",
 });
 
 const refreshCookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
   maxAge: REFRESH_LIFETIME_MS,
-  path: '/api/auth',
+  path: "/api/auth",
 });
 
 const hashRefreshToken = (token: string) =>
-  createHash('sha256').update(token).digest('hex');
+  createHash("sha256").update(token).digest("hex");
 
-const createRefreshToken = () => randomBytes(32).toString('base64url');
+const createRefreshToken = () => randomBytes(32).toString("base64url");
 
-const clearAuthCookies = (res: import('express').Response) => {
-  res.clearCookie('access_token', accessCookieOptions());
-  res.clearCookie('refresh_token', refreshCookieOptions());
+const clearAuthCookies = (res: Response) => {
+  res.clearCookie("access_token", accessCookieOptions());
+  res.clearCookie("refresh_token", refreshCookieOptions());
 };
 
 const setAuthCookies = (
-  res: import('express').Response,
+  res: Response,
   accessToken: string,
   refreshToken: string,
 ) => {
-  res.cookie('access_token', accessToken, accessCookieOptions());
-  res.cookie('refresh_token', refreshToken, refreshCookieOptions());
+  res.cookie("access_token", accessToken, accessCookieOptions());
+  res.cookie("refresh_token", refreshToken, refreshCookieOptions());
 };
 
-const sessionExpired = (res: import('express').Response) => {
+const sessionExpired = (res: Response) => {
   clearAuthCookies(res);
-  return res.status(401).json({ error: 'Session expired' });
+  return res.status(401).json({ error: "Session expired" });
 };
 
 const registerSchema = z.object({
@@ -61,14 +66,14 @@ const registerSchema = z.object({
     .max(30)
     .regex(/^[a-z0-9_-]+$/, {
       message:
-        'Username can only contain lowercase letters, numbers, and underscores',
+        "Username can only contain lowercase letters, numbers, underscores and hyphens",
     }),
   name: z.string().trim().min(1).max(100),
   email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
   password: z.string().min(8).max(100),
 });
 
-authRouter.post('/register', registerLimiter, async (req, res) => {
+authRouter.post("/register", registerLimiter, async (req, res) => {
   const result = registerSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
@@ -98,18 +103,14 @@ authRouter.post('/register', registerLimiter, async (req, res) => {
   } catch (e) {
     if (
       e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === 'P2002'
+      e.code === "P2002"
     ) {
       return res.status(409).json({
-        error: 'Username or email already exists',
+        error: "Username or email already exists",
       });
     }
     throw e;
   }
-});
-
-authRouter.get('/', (_req, res) => {
-  res.json({ message: 'Auth routes are working' });
 });
 
 const loginSchema = z.object({
@@ -117,7 +118,7 @@ const loginSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-authRouter.post('/login', loginLimiter, async (req, res) => {
+authRouter.post("/login", loginLimiter, async (req, res) => {
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
@@ -144,9 +145,15 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
 
   if (!user || !verified) {
     return res.status(401).json({
-      error: 'Invalid credentials',
+      error: "Invalid credentials",
     });
   }
+
+  // Remove this user's expired sessions so the table does not grow forever
+  await prisma.refreshSession.deleteMany({
+    where: { userId: user.id, expiresAt: { lte: new Date() } },
+  });
+
   const jwtToken = await createAccessToken(user.id);
   const refreshToken = createRefreshToken();
   await prisma.refreshSession.create({
@@ -168,9 +175,9 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
   });
 });
 
-authRouter.post('/refresh', async (req, res) => {
+authRouter.post("/refresh", refreshLimiter, async (req, res) => {
   const token = req.cookies?.refresh_token;
-  if (typeof token !== 'string' || token.length === 0)
+  if (typeof token !== "string" || token.length === 0)
     return sessionExpired(res);
 
   const tokenHash = hashRefreshToken(token);
@@ -210,12 +217,12 @@ authRouter.post('/refresh', async (req, res) => {
   if (rotated.count !== 1) return sessionExpired(res);
 
   setAuthCookies(res, accessToken, nextRefreshToken);
-  return res.status(200).json({ message: 'Session refreshed' });
+  return res.status(200).json({ message: "Session refreshed" });
 });
 
-authRouter.post('/logout', async (req, res) => {
+authRouter.post("/logout", async (req, res) => {
   const token = req.cookies?.refresh_token;
-  if (typeof token === 'string' && token.length > 0) {
+  if (typeof token === "string" && token.length > 0) {
     await prisma.refreshSession.deleteMany({
       where: { tokenHash: hashRefreshToken(token) },
     });
@@ -224,11 +231,11 @@ authRouter.post('/logout', async (req, res) => {
   clearAuthCookies(res);
 
   return res.status(200).json({
-    message: 'Logged out successfully',
+    message: "Logged out successfully",
   });
 });
 
-authRouter.get('/me', requireAuth, (req, res) => {
+authRouter.get("/me", requireAuth, (req, res) => {
   return res.status(200).json({
     user: req.user,
   });
